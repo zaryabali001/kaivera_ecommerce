@@ -8,6 +8,7 @@ $port = 3306;
 $dsn = "mysql:host=$server;port=$port; dbname=$database";
 
 
+/*
 try {
     $conn = new PDO($dsn, $user, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -15,3 +16,5 @@ try {
 } catch (PDOException $e) {
     echo "Connection failed: " . $e->getMessage();
 }
+*/
+

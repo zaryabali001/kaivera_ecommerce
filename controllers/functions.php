@@ -1,357 +1,344 @@
 <?php
 
-
 require_once("dbconn.php");
 
-function getCategories()
-{
+/**
+ * Helper function to safely execute a prepared statement or return dummy data
+ */
+function safeQuery($query, $params = [], $fetchMode = 'all', $dummyData = []) {
     global $conn;
-    $Query = "Select * from categories;";
-    $stmt = $conn->prepare($Query);
-    $stmt->execute();
-
-    $categories =  $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $categories;
+    
+    if (!$conn instanceof PDO) {
+        // Return dummy data if no connection
+        return $dummyData;
+    }
+    
+    try {
+        $stmt = $conn->prepare($query);
+        $stmt->execute($params);
+        
+        if ($fetchMode === 'all') {
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } elseif ($fetchMode === 'one') {
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } elseif ($fetchMode === 'column') {
+            return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        }
+        
+        return [];
+    } catch (PDOException $e) {
+        // In production: log error instead of displaying
+        // error_log("Database error: " . $e->getMessage());
+        return $dummyData;
+    }
 }
 
+// ────────────────────────────────────────────────
+// CATEGORY & PRODUCT FUNCTIONS (mostly dummy for now)
+// ────────────────────────────────────────────────
 
-function getProducts()
-{
-    global $conn;
-    $Query = "Select * from products;";
-    $stmt = $conn->prepare($Query);
-    $stmt->execute();
-
-    $products =  $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $products;
+function getCategories() {
+    // Real version (uncomment when DB is ready):
+    /*
+    return safeQuery("SELECT * FROM categories ORDER BY category_name");
+    */
+    
+    // Dummy data
+    return [
+        ['category_id' => 1, 'category_name' => 'Essentials'],
+        ['category_id' => 2, 'category_name' => 'Accessories'],
+    ];
 }
 
-function getSearchProducts($product_id)
-{
-    global $conn;
-    $Query = "Select * from products where product_id = ?;";
-    $stmt = $conn->prepare($Query);
-    $stmt->execute([$product_id]);
-
-    $searchProducts =  $stmt->fetch(PDO::FETCH_ASSOC);
-
-    return $searchProducts;
-}
-function getProductsByCategory($category_id)
-{
-    global $conn;
-    $Query = "Select * from products where category_id = ?;";
-    $stmt = $conn->prepare($Query);
-    $stmt->execute([$category_id]);
-
-    $productsByCategory =  $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $productsByCategory;
-}
-
-function getUsers()
-{
-    global $conn;
-    $Query = "Select * from users;";
-    $stmt = $conn->prepare($Query);
-    $stmt->execute();
-
-    $users =  $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $users;
+function getProducts() {
+    // Real version:
+    /*
+    return safeQuery("SELECT * FROM products ORDER BY product_id DESC");
+    */
+    
+    // Dummy
+    return [
+        [
+            'product_id' => 1,
+            'product_name' => 'Sample Product 1',
+            'product_price' => 29.99,
+            'product_image' => 'assets/images/mockup.webp',
+            'product_description' => 'This is a sample product.',
+            'category_id' => 1
+        ],
+        [
+            'product_id' => 2,
+            'product_name' => 'Sample Product 2',
+            'product_price' => 39.99,
+            'product_image' => 'assets/images/young-model-fashion-shoot.jpg',
+            'product_description' => 'Another sample product.',
+            'category_id' => 1
+        ]
+    ];
 }
 
-function getUsersDesc()
-{
-    global $conn;
-    $Query = "Select * from users ORDER BY 
-    created_at DESC;";
-    $stmt = $conn->prepare($Query);
-    $stmt->execute();
-
-    $users =  $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $users;
+function getSearchProducts($product_id) {
+    // Real:
+    /*
+    return safeQuery(
+        "SELECT * FROM products WHERE product_id = ?",
+        [$product_id],
+        'one',
+        null
+    ) ?: [];
+    */
+    
+    // Dummy
+    return [
+        'product_id' => $product_id,
+        'product_name' => 'Searched Product',
+        'product_price' => 25.99,
+        'product_image' => 'assets/images/hero-img5.webp',
+        'product_description' => 'Searched product description.',
+        'category_id' => 1
+    ];
 }
 
-function getSearchUser($user_id)
-{
-    global $conn;
-    $query = "SELECT * FROM users where user_id = ?;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$user_id]);
-
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    return $user;
-}
-
-function getUserType($user_email)
-{
-    global $conn;
-    $query = "SELECT * from users where user_email = ?;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$user_email]);
-
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $user;
-}
-
-function getReviews()
-{
-    global $conn;
-    $query = "SELECT reviews.review_id,
-    reviews.rating,
-    reviews.comment,
-    reviews.review_date,
-    users.user_id,
-    users.user_name,
-    users.user_email,
-    users.user_type,
-    users.user_profile_image FROM reviews JOIN users ON reviews.user_id = users.user_id ORDER BY 
-    reviews.review_date DESC LIMIT 10;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-
-    $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $reviews;
-}
-function getAllReviews()
-{
-    global $conn;
-    $query = "SELECT reviews.review_id,
-    reviews.rating,
-    reviews.comment,
-    reviews.review_date,
-    users.user_id,
-    users.user_name,
-    users.user_email,
-    users.user_type,
-    users.user_profile_image FROM reviews JOIN users ON reviews.user_id = users.user_id ORDER BY 
-    reviews.review_date DESC;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-
-    $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $reviews;
-}
-
-
-
-function getDiscount($discount_code)
-{
-    global $conn;
-    $query = "SELECT * FROM discounts where discount_code = ?";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$discount_code]);
-
-    $discount = $stmt->fetch(PDO::FETCH_ASSOC);
-    return $discount;
-}
-
-function getOrderDetails($order_id)
-{
-    global $conn;
-
-    $query =  "SELECT 
-    o.*, 
-    oi.product_id, 
-    oi.product_name, 
-    oi.quantity, 
-    oi.price,
-    u.user_name, 
-    u.user_email,
-    d.discount_code,
-    d.discount_percent
-FROM orders o
-JOIN order_items oi ON o.order_id = oi.order_id
-JOIN users u ON o.user_id = u.user_id
-LEFT JOIN discounts d ON o.discount_id = d.discount_id
-WHERE o.order_id = ?;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$order_id]);
-
-    $order_details = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $order_details;
-}
-
-
-function getWishList($user_id)
-{
-    global $conn;
-
-    $query = "SELECT product_id from wishlist where user_id = ?;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$user_id]);
-
-    $wishlist = $stmt->fetchAll(PDO::FETCH_COLUMN);
-
-    return $wishlist;
-}
-
-function getWishedProduct($user_id)
-{
-    global $conn;
-
-    $query = "SELECT * FROM wishlist w JOIN products p ON w.product_id = p.product_id WHERE w.user_id = ?;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$user_id]);
-
-    $wishedProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $wishedProducts;
-}
-
-function getOrders()
-{
-    global $conn;
-
-    $query =  "SELECT 
-    o.*, 
-    u.user_name, 
-    d.discount_code,
-    d.discount_percent
-FROM orders o
-JOIN users u ON o.user_id = u.user_id
-LEFT JOIN discounts d ON o.discount_id = d.discount_id ORDER BY o.order_date DESC;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-
-    $order = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $order;
-}
-function getOrderItems()
-{
-    global $conn;
-
-    $query =  "SELECT * FROM order_items ORDER BY order_id DESC;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-
-    $order_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $order_items;
-}
-
-
-
-function getDiscounts()
-{
-    global $conn;
-
-    $query = "SELECT * FROM discounts;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-
-    $discounts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $discounts;
-}
-
-
-function getMessages()
-{
-    global $conn;
-
-    $query = "SELECT * FROM messages;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-
-    $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $messages;
-}
-
-function getOrdersByUserId($user_id)
-{
-    global $conn;
-
-    $query = "SELECT 
-    o.*, 
-    u.user_name, 
-    d.discount_code,
-    d.discount_percent
-FROM orders o
-JOIN users u ON o.user_id = u.user_id
-LEFT JOIN discounts d ON o.discount_id = d.discount_id 
-WHERE o.user_id = ? ORDER BY o.order_date DESC;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$user_id]);
-
-    $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $orders;
-}
-
-function getReviewsByUserId($user_id)
-{
-    global $conn;
-    $query = "SELECT 
-    reviews.review_id,
-    reviews.rating,
-    reviews.comment,
-    reviews.review_date,
-    users.user_id,
-    users.user_name,
-    users.user_email,
-    users.user_profile_image
-FROM reviews 
-JOIN users ON reviews.user_id = users.user_id 
-WHERE reviews.user_id = ?
-ORDER BY reviews.review_date DESC;
-";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$user_id]);
-
-    $reviews = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $reviews;
-}
-
-function getOrderItemsByUserId($user_id)
-{
-    global $conn;
-
-    $query =  "SELECT order_items.*
-FROM order_items
-JOIN orders ON order_items.order_id = orders.order_id
-WHERE orders.user_id = ? ORDER BY orders.order_date DESC;";
-    $stmt = $conn->prepare($query);
-    $stmt->execute([$user_id]);
-
-    $order_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $order_items;
-}
-
-function getTopProducts()
-{
-    global $conn;
-    $query = "SELECT p.*,
-        SUM(oi.quantity) AS total_sold
-        FROM order_items oi
-        JOIN products p ON oi.product_id = p.product_id
-        GROUP BY p.product_name
-        ORDER BY total_sold DESC
-        LIMIT 4;";
-
-    $stmt = $conn->prepare($query);
-    $stmt->execute();
-    $topProducts = $stmt->fetchAll();
-
-    return $topProducts;
-}
-
-function validatePassword($password)
-{
-    return preg_match(
-        '/^(?=.*[A-Z])(?=.*\d).{8,}$/',
-        $password
+function getProductsByCategory($category_id) {
+    // Real:
+    /*
+    return safeQuery(
+        "SELECT * FROM products WHERE category_id = ?",
+        [$category_id]
     );
+    */
+    
+    // Dummy
+    return [
+        [
+            'product_id' => 1,
+            'product_name' => 'Category Product 1',
+            'product_price' => 19.99,
+            'product_image' => 'assets/images/dressSketch.webp',
+            'product_description' => 'Product in category.',
+            'category_id' => $category_id
+        ]
+    ];
+}
+
+function getTopProducts() {
+    // Real version (this was the crashing function):
+    /*
+    return safeQuery(
+        "SELECT p.*, SUM(oi.quantity) AS total_sold
+         FROM order_items oi
+         JOIN products p ON oi.product_id = p.product_id
+         GROUP BY p.product_id, p.product_name
+         ORDER BY total_sold DESC
+         LIMIT 4"
+    );
+    */
+    
+    // Dummy
+    return [
+        [
+            'product_id' => 1,
+            'product_name' => 'Top Product 1',
+            'product_price' => 49.99,
+            'product_image' => 'assets/images/recentWork.jpg',
+            'total_sold' => 100
+        ],
+        [
+            'product_id' => 2,
+            'product_name' => 'Top Product 2',
+            'product_price' => 59.99,
+            'product_image' => 'assets/images/recentWork2.jpg',
+            'total_sold' => 80
+        ]
+    ];
+}
+
+// ────────────────────────────────────────────────
+// USER FUNCTIONS
+// ────────────────────────────────────────────────
+
+function getUsers() {
+    // Real:
+    /*
+    return safeQuery("SELECT * FROM users");
+    */
+    
+    // Dummy
+    return [
+        [
+            'user_id' => 1,
+            'user_name' => 'Admin User',
+            'user_email' => 'admin@example.com',
+            'user_type' => 'admin'
+        ]
+    ];
+}
+
+function getUsersDesc() {
+    return safeQuery(
+        "SELECT * FROM users ORDER BY created_at DESC"
+    );
+}
+
+function getSearchUser($user_id) {
+    return safeQuery(
+        "SELECT * FROM users WHERE user_id = ?",
+        [$user_id],
+        'one'
+    ) ?: [];
+}
+
+function getUserType($user_email) {
+    return safeQuery(
+        "SELECT * FROM users WHERE user_email = ?",
+        [$user_email],
+        'one'
+    ) ?: [];
+}
+
+// ────────────────────────────────────────────────
+// REVIEWS
+// ────────────────────────────────────────────────
+
+function getReviews() {
+    // Limited version for frontend
+    /*
+    return safeQuery(
+        "SELECT r.review_id, r.rating, r.comment, r.review_date,
+                u.user_id, u.user_name, u.user_email, u.user_type, u.user_profile_image
+         FROM reviews r
+         JOIN users u ON r.user_id = u.user_id
+         ORDER BY r.review_date DESC
+         LIMIT 10"
+    );
+    */
+    
+    // Dummy
+    return [
+        [
+            'review_id' => 1, 'rating' => 5, 'comment' => 'Great product!',
+            'review_date' => '2023-01-01', 'user_id' => 1, 'user_name' => 'John Doe',
+            'user_email' => 'john@example.com', 'user_type' => 'user',
+            'user_profile_image' => 'uploads/profile_pictures/default_pf.jpg'
+        ],
+        // ... more
+    ];
+}
+
+function getAllReviews() {
+    return safeQuery(
+        "SELECT r.review_id, r.rating, r.comment, r.review_date,
+                u.user_id, u.user_name, u.user_email, u.user_type, u.user_profile_image
+         FROM reviews r
+         JOIN users u ON r.user_id = u.user_id
+         ORDER BY r.review_date DESC"
+    );
+}
+
+function getReviewsByUserId($user_id) {
+    return safeQuery(
+        "SELECT r.review_id, r.rating, r.comment, r.review_date,
+                u.user_id, u.user_name, u.user_email, u.user_profile_image
+         FROM reviews r
+         JOIN users u ON r.user_id = u.user_id
+         WHERE r.user_id = ?
+         ORDER BY r.review_date DESC",
+        [$user_id]
+    );
+}
+
+// ────────────────────────────────────────────────
+// ORDERS, DISCOUNTS, WISHLIST
+// ────────────────────────────────────────────────
+
+function getDiscount($discount_code) {
+    return safeQuery(
+        "SELECT * FROM discounts WHERE discount_code = ?",
+        [$discount_code],
+        'one'
+    ) ?: [];
+}
+
+function getDiscounts() {
+    return safeQuery("SELECT * FROM discounts");
+}
+
+function getOrderDetails($order_id) {
+    return safeQuery(
+        "SELECT o.*, oi.product_id, oi.product_name, oi.quantity, oi.price,
+                u.user_name, u.user_email, d.discount_code, d.discount_percent
+         FROM orders o
+         JOIN order_items oi ON o.order_id = oi.order_id
+         JOIN users u ON o.user_id = u.user_id
+         LEFT JOIN discounts d ON o.discount_id = d.discount_id
+         WHERE o.order_id = ?",
+        [$order_id]
+    );
+}
+
+function getOrders() {
+    return safeQuery(
+        "SELECT o.*, u.user_name, d.discount_code, d.discount_percent
+         FROM orders o
+         JOIN users u ON o.user_id = u.user_id
+         LEFT JOIN discounts d ON o.discount_id = d.discount_id
+         ORDER BY o.order_date DESC"
+    );
+}
+
+function getOrderItems() {
+    return safeQuery("SELECT * FROM order_items ORDER BY order_id DESC");
+}
+
+function getOrdersByUserId($user_id) {
+    return safeQuery(
+        "SELECT o.*, u.user_name, d.discount_code, d.discount_percent
+         FROM orders o
+         JOIN users u ON o.user_id = u.user_id
+         LEFT JOIN discounts d ON o.discount_id = d.discount_id
+         WHERE o.user_id = ?
+         ORDER BY o.order_date DESC",
+        [$user_id]
+    );
+}
+
+function getOrderItemsByUserId($user_id) {
+    return safeQuery(
+        "SELECT oi.*
+         FROM order_items oi
+         JOIN orders o ON oi.order_id = o.order_id
+         WHERE o.user_id = ?
+         ORDER BY o.order_date DESC",
+        [$user_id]
+    );
+}
+
+function getWishList($user_id) {
+    return safeQuery(
+        "SELECT product_id FROM wishlist WHERE user_id = ?",
+        [$user_id],
+        'column'
+    );
+}
+
+function getWishedProduct($user_id) {
+    return safeQuery(
+        "SELECT p.*
+         FROM wishlist w
+         JOIN products p ON w.product_id = p.product_id
+         WHERE w.user_id = ?",
+        [$user_id]
+    );
+}
+
+// ────────────────────────────────────────────────
+// OTHER
+// ────────────────────────────────────────────────
+
+function getMessages() {
+    return safeQuery("SELECT * FROM messages");
+}
+
+function validatePassword($password) {
+    return preg_match('/^(?=.*[A-Z])(?=.*\d).{8,}$/', $password);
 }
